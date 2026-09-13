@@ -6,11 +6,14 @@ import com.example.dlinkexam.data.repository.StationRepository
 import com.example.dlinkexam.domain.model.StationsResult
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.debounce
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.stateIn
 
 @HiltViewModel
@@ -23,7 +26,7 @@ class ListViewModel @Inject constructor(
 
     val uiState: StateFlow<ListUiState> = combine(
         repository.observeStations(POLL_INTERVAL_MILLIS),
-        _filterQuery,
+        _filterQuery.debounce(FILTER_DEBOUNCE_MILLIS),
     ) { result, query ->
         when (result) {
             is StationsResult.Success -> {
@@ -36,7 +39,7 @@ class ListViewModel @Inject constructor(
             }
             is StationsResult.Failure -> ListUiState.Error(result.throwable.message ?: "載入失敗")
         }
-    }.stateIn(
+    }.flowOn(Dispatchers.Default).stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS),
         initialValue = ListUiState.Loading,
@@ -49,5 +52,6 @@ class ListViewModel @Inject constructor(
     private companion object {
         const val POLL_INTERVAL_MILLIS = 3 * 60 * 1000L
         const val STOP_TIMEOUT_MILLIS = 5_000L
+        const val FILTER_DEBOUNCE_MILLIS = 150L
     }
 }

@@ -14,7 +14,6 @@ object GeoTileMath {
         val zoom: Int,
         val xTile: Int,
         val yTile: Int,
-        /** Pixel offset of the point within its 256x256 tile. */
         val pixelX: Int,
         val pixelY: Int,
     )
